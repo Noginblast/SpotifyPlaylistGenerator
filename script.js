@@ -24,7 +24,7 @@ $( document ).ready(function() {
     let client_id = 'e8714888680a477cb0afc745df9c8030';
     // Use the following site to convert your regular url to the encoded version:
     // https://www.url-encode-decode.com/
-    let redirect_uri = 'https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator'; // GitHub Pages URL or whatever your public url to this app is
+    let redirect_uri = 'https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator%2F'; // GitHub Pages URL or whatever your public url to this app is
     // *************** END *************************
 
     const redirect = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${redirect_uri}&scope=playlist-modify-private`;
