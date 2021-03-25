@@ -19,6 +19,9 @@ $( document ).ready(function() {
     // Get Access Token
     const accessToken = getUrlParameter('access_token');
 
+    //Set PLaylist Name
+    const playlistName = 'PLAYLIST GENERATOR';
+
     // AUTHORIZE with Spotify (if needed)
     // *************** REPLACE THESE VALUES! *************************
     let client_id = 'e8714888680a477cb0afc745df9c8030';
@@ -27,7 +30,7 @@ $( document ).ready(function() {
     let redirect_uri = 'https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator%2F'; // https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator%2F  http%3A%2F%2F127.0.0.1%3A5500%2F
     // *************** END *************************
 
-    const redirect = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${redirect_uri}&scope=playlist-modify-private`;
+    const redirect = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${redirect_uri}&scope=playlist-modify-private%20playlist-modify-public`;
     // Don't authorize if we have an access token already
     if(accessToken == null || accessToken == "" || accessToken == undefined){
       window.location.replace(redirect);
@@ -39,7 +42,7 @@ $( document ).ready(function() {
       let raw_search_query = $('#search-text').val();
       let search_query = encodeURI(raw_search_query);
       
-      createPlaylist(accessToken);
+      createPlaylist(accessToken, playlistName);
       // Make Spotify API call
       // Note: We are using the track API endpoint.
       
@@ -79,7 +82,7 @@ $( document ).ready(function() {
 
 
 
-  let createPlaylist = function(accessToken) {
+  let createPlaylist = function(accessToken, playlistName) {
     let userid;
     let playlistsObject;
     let playlistExists = false;
@@ -93,6 +96,7 @@ $( document ).ready(function() {
         },
         success: function(data) {
           userid = data.id;
+          console.log(data);
 
           $.ajax({
             url: 'https://api.spotify.com/v1/me/playlists',
@@ -102,36 +106,57 @@ $( document ).ready(function() {
             },
             success: function(data){
               playlistsObject = data;
+              console.log(playlistsObject);
+
+              for(var i = 0; i < playlistsObject.items.length; i++){
+                if(playlistsObject.items[i].name == playlistName){
+                  
+                  playlistExists = true;
+
+                  let playlistID = playlistsObject.items[i].id;
+                  let playlistItems;
+
+                  $.ajax({url: `https://api.spotify.com/v1/playlists/${playlistID}/tracks`,//////////////////////////////////////////////////////////////////////////
+                    type: 'GET',
+                    headers: {
+                        'Authorization' : 'Bearer ' + accessToken
+                    },
+                    data: {
+                        'market' : 'from_token'
+                    },
+                    success: function(data){
+                      playlistItems = data;
+                      console.log(playlistItems);
+
+
+
+                    }
+
+
+                  });
+                  
+
+                }
+              }
+
+
+              if(!playlistExists){
+                $.ajax({
+                url: `https://api.spotify.com/v1/users/${userid}/playlists`,
+                type: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + accessToken
+                },
+                data: JSON.stringify({
+                  'name': playlistName,
+                  'description': 'THIS IS A TEST',
+                  'public': true
+                  })
+                })
+              }
+
             }
           })
-    
-        for(const item in playlistsObject){
-            if(JSON.stringify(playlistsObject.items[item].name) == "Test Playlist"){
-              playlistExists = true;
-
-
-            }
-            
-            console.log(playlistsObject.items[items].name);
-        }
-
-        
-
-        if(!playlistExists){
-          $.ajax({
-          url: `https://api.spotify.com/v1/users/${userid}/playlists`,
-          type: 'POST',
-          headers: {
-              'Authorization': 'Bearer ' + accessToken
-          },
-          data: JSON.stringify({
-            'name': 'Test Playlist',
-            'description': 'THIS IS A TEST',
-            'public': false
-            })
-          })
-        }
-          
         }
       })
     
