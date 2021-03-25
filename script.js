@@ -24,7 +24,7 @@ $( document ).ready(function() {
     let client_id = 'e8714888680a477cb0afc745df9c8030';
     // Use the following site to convert your regular url to the encoded version:
     // https://www.url-encode-decode.com/
-    let redirect_uri = 'https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator%2F'; // GitHub Pages URL or whatever your public url to this app is
+    let redirect_uri = 'http%3A%2F%2F127.0.0.1%3A5500%2F'; // GitHub Pages URL or whatever your public url to this app is
     // *************** END *************************
 
     const redirect = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${redirect_uri}&scope=playlist-modify-private`;
@@ -105,7 +105,19 @@ $( document ).ready(function() {
             }
           })
     
+        for(const item in playlistsObject){
+            if(JSON.stringify(playlistsObject.items[item].name) == "Test Playlist"){
+              playlistExists = true;
+
+
+            }
+            
+            console.log(playlistsObject.items[items].name);
+        }
+
         
+
+        if(!playlistExists){
           $.ajax({
           url: `https://api.spotify.com/v1/users/${userid}/playlists`,
           type: 'POST',
@@ -118,6 +130,8 @@ $( document ).ready(function() {
             'public': false
             })
           })
+        }
+          
         }
       })
     
