@@ -5,6 +5,10 @@ let playlistIDNum;
 
 
 
+
+
+
+
 $( document ).ready(function() {
      // Helper Function to Extract Access Token for URL
     const getUrlParameter = (sParam) => {
@@ -40,7 +44,25 @@ $( document ).ready(function() {
       return artistLoc;
     })();
 
+    console.log(artistLoc);
 
+    //JSON.parse(JSON.stringify(artistLoc).replace(/"\s+|\s+"/g,'"'));
+    function DeepTrim(artistLoc) {
+      for (var prop in artistLoc) {
+          var value = artistLoc[prop], type = typeof value;
+          if (value != null && (type == "string" || type == "object") && artistLoc.hasOwnProperty(prop)) {
+              if (type == "object") {
+                  DeepTrim(artistLoc[prop]);
+              } else {
+                artistLoc[prop] = artistLoc[prop].trim();
+              }
+          }
+      }
+  }
+
+   DeepTrim(artistLoc);
+
+  
 
 
     // AUTHORIZE with Spotify (if needed)
@@ -48,7 +70,7 @@ $( document ).ready(function() {
     let client_id = 'e8714888680a477cb0afc745df9c8030';
     // Use the following site to convert your regular url to the encoded version:
     // https://www.url-encode-decode.com/
-    let redirect_uri = 'https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator%2F'; // https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator%2F  http%3A%2F%2F127.0.0.1%3A5500%2F
+    let redirect_uri = 'http%3A%2F%2F127.0.0.1%3A5500%2F'; // https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator%2F  http%3A%2F%2F127.0.0.1%3A5500%2F
     // *************** END *************************
 
     const redirect = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${redirect_uri}&scope=playlist-modify-private%20playlist-modify-public`;
@@ -60,14 +82,28 @@ $( document ).ready(function() {
     // Search button has been clicked
     $( "#search_button" ).click(function() {
       //Get the value of the search box
-      let raw_search_query = $('#search-text').val();
+      let raw_search_query = $('#stateSelector').val();
+      let playlistDuration = parseInt($('#hourSelector').val())*3600 + (parseInt($('#minSelector').val()))*60;
+
+      console.log(playlistDuration);
       let search_query = encodeURI(raw_search_query);
 
       let date = new Date();
       let playlistDescription = date.toString();
+
+      let artistNameContainer = [];
+      let artistIDContainer = [];
+
+      loadArtists(artistLoc, raw_search_query, artistNameContainer);
+      console.log(artistNameContainer);
+
+      loadArtistIDs(accessToken,artistNameContainer,artistIDContainer);
+      console.log(artistIDContainer);
       
       
       createPlaylist(accessToken, playlistName, playlistDescription);
+
+      addRandomSongs(accessToken,artistIDContainer,playlistDuration);
 
       // Make Spotify API call
       // Note: We are using the track API endpoint.
@@ -93,10 +129,10 @@ $( document ).ready(function() {
         while(count < max_songs && count < num_of_tracks){
           // Extract the id of the FIRST song from the data object
           let id = data.tracks.items[count].id;
-          let uri = data.tracks.items[count].uri;
+          //let uri = data.tracks.items[count].uri;
 
           //Add music to the appication playlist
-          addSong(accessToken, playlistIDNum, uri);
+          //addSong(accessToken, playlistIDNum, uri);
 
 
           // Constructing two different iframes to embed the song
@@ -204,21 +240,87 @@ $( document ).ready(function() {
 
 /*This method adds music to the given playlist with the playlist ID and
    song URI (Only adds one song at a time)*/
-  let addSong = function(accessToken, playlistIDNum, uri){
+  let addRandomSongs = function(accessToken, artistIDContainer, duration){
+    var durationCount = 0;
+    
+    while(true){
+      var randNum = Math.floor(Math.random()*playlistIDNum.length);
+      var artID = artistIDContainer[randNum];
 
+
+      $.ajax({
+        url: `https://api.spotify.com/v1/artists/${artID}/top-tracks?market=from_token`,
+        type: 'GET',
+        async: false,
+        headers: {
+            'Authorization': 'Bearer ' + accessToken,
+        },
+        success: function(data){
+          var randNum2 = Math.floor(Math.random()*data.tracks.length);
+
+          durationCount += Math.floor((data.tracks[randNum2].duration_ms)/1000);
+          console.log(durationCount);
+          console.log(duration);
+          if(durationCount < duration){
+            $.ajax({
+              url: `https://api.spotify.com/v1/playlists/${playlistIDNum}/tracks?uris=${data.tracks[randNum2].uri}`,
+              type: 'POST',
+              headers: {
+                  'Authorization': 'Bearer ' + accessToken,
+                  'Content-Type': 'application/json'
+              },
+              success: function(data){
+                console.log(data);
+              },
+              error: function(data){
+                console.log(data);
+              }
+            })
+          }
+        
+          
+          console.log(data);
+          
+        },
+        error: function(data){
+          console.log(data);
+        }
+      })
+
+      if(durationCount > duration){
+        break;
+      }
+
+    }
     //API call to add a chosen song to the application playlist
-    $.ajax({
-      url: `https://api.spotify.com/v1/playlists/${playlistIDNum}/tracks?uris=${uri}`,
-      type: 'POST',
+    /**/
+  }
+
+  let loadArtists = function(artistLoc, state, artistNameContainer){
+      for(var i = 0; i < artistLoc.length; i++){
+        if(artistLoc[i].state == state){
+          artistNameContainer.push(artistLoc[i].artist);
+        }
+      }
+  }
+
+  let loadArtistIDs = function(accessToken,artistNameContainer,artistIDContainer){
+      
+    for(var i = 0; i < artistNameContainer.length; i++){
+      var artistNameURI = encodeURI(artistNameContainer[i])
+      $.ajax({
+      url: `https://api.spotify.com/v1/search?q=${artistNameURI}&type=artist`,
+      type: 'GET',
+      async: false,
       headers: {
-          'Authorization': 'Bearer ' + accessToken,
-          'Content-Type': 'application/json'
+          'Authorization' : 'Bearer ' + accessToken
       },
       success: function(data){
-        console.log(data);
+        artistIDContainer.push(data.artists.items[0].id);
       },
-      error: function(data){
-        console.log(data);
+      error: function(){
+
       }
-    })
+      });
+    }
   }
