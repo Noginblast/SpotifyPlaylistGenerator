@@ -35,7 +35,7 @@ $( document ).ready(function() {
       $.ajax({
         'async': false,
         'global': false,
-        'url': "/artistInfo.json",
+        'url': "/blob/main/artistInfo.json",
         'dataType': "json",
         'success': function(data) {
           artistLoc = data;
@@ -55,7 +55,7 @@ $( document ).ready(function() {
     let client_id = 'e8714888680a477cb0afc745df9c8030';
     // Use the following site to convert your regular url to the encoded version:
     // https://www.url-encode-decode.com/
-    let redirect_uri = 'https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator%2F'; // https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator%2F  http%3A%2F%2F127.0.0.1%3A5500%2F
+    let redirect_uri = 'http%3A%2F%2F127.0.0.1%3A5500%2F'; // https%3A%2F%2Fnoginblast.github.io%2FSpotifyPlaylistGenerator%2F  http%3A%2F%2F127.0.0.1%3A5500%2F
     // *************** END *************************
 
     const redirect = `https://accounts.spotify.com/authorize?client_id=${client_id}&response_type=token&redirect_uri=${redirect_uri}&scope=playlist-modify-private%20playlist-modify-public`;
