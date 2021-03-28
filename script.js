@@ -35,7 +35,7 @@ $( document ).ready(function() {
       $.ajax({
         'async': false,
         'global': false,
-        'url': "SpotifyPlaylistGenerator/artistIDs.json",
+        'url': "/artistIDs.json",
         'dataType': "json",
         'success': function(data) {
           artistLoc = data;
