@@ -1,4 +1,3 @@
-# Spotify API using Only jQuery
+To run in browser use the link:
 
-This is the codebase used in the following tutorial:
-https://youtu.be/d0FFlTeyAY8
+https://noginblast.github.io/SpotifyPlaylistGenerator/

@@ -46,21 +46,6 @@ $( document ).ready(function() {
 
     console.log(artistLoc);
 
-    //JSON.parse(JSON.stringify(artistLoc).replace(/"\s+|\s+"/g,'"'));
-    function DeepTrim(artistLoc) {
-      for (var prop in artistLoc) {
-          var value = artistLoc[prop], type = typeof value;
-          if (value != null && (type == "string" || type == "object") && artistLoc.hasOwnProperty(prop)) {
-              if (type == "object") {
-                  DeepTrim(artistLoc[prop]);
-              } else {
-                artistLoc[prop] = artistLoc[prop].trim();
-              }
-          }
-      }
-  }
-
-   DeepTrim(artistLoc);
 
   
 
@@ -95,15 +80,12 @@ $( document ).ready(function() {
       let artistIDContainer = [];
 
       loadArtists(artistLoc, raw_search_query, artistNameContainer);
-      console.log(artistNameContainer);
-
-      loadArtistIDs(accessToken,artistNameContainer,artistIDContainer);
-      console.log(artistIDContainer);
+      //console.log(artistNameContainer);
       
       
       createPlaylist(accessToken, playlistName, playlistDescription);
 
-      addRandomSongs(accessToken,artistIDContainer,playlistDuration);
+      addRandomSongs(accessToken,artistNameContainer,playlistDuration);
 
       // Make Spotify API call
       // Note: We are using the track API endpoint.
@@ -240,13 +222,17 @@ $( document ).ready(function() {
 
 /*This method adds music to the given playlist with the playlist ID and
    song URI (Only adds one song at a time)*/
-  let addRandomSongs = function(accessToken, artistIDContainer, duration){
+  let addRandomSongs = function(accessToken, artistNameContainer, duration){
     var durationCount = 0;
+    var tmp;
     
     while(true){
       var randNum = Math.floor(Math.random()*playlistIDNum.length);
-      var artID = artistIDContainer[randNum];
+      var artID = artistNameContainer[randNum].id;
 
+      if(durationCount > duration){
+        break;
+      }
 
       $.ajax({
         url: `https://api.spotify.com/v1/artists/${artID}/top-tracks?market=from_token`,
@@ -259,48 +245,49 @@ $( document ).ready(function() {
           var randNum2 = Math.floor(Math.random()*data.tracks.length);
 
           durationCount += Math.floor((data.tracks[randNum2].duration_ms)/1000);
-          console.log(durationCount);
-          console.log(duration);
+          tmp = Math.floor((data.tracks[randNum2].duration_ms)/1000);
+
           if(durationCount < duration){
             $.ajax({
               url: `https://api.spotify.com/v1/playlists/${playlistIDNum}/tracks?uris=${data.tracks[randNum2].uri}`,
               type: 'POST',
+              async: false,
               headers: {
                   'Authorization': 'Bearer ' + accessToken,
                   'Content-Type': 'application/json'
               },
               success: function(data){
-                console.log(data);
+                
               },
               error: function(data){
-                console.log(data);
+                
+                durationCount = durationCount - tmp;
               }
             })
           }
         
           
-          console.log(data);
+          
           
         },
         error: function(data){
-          console.log(data);
+          
         }
       })
 
-      if(durationCount > duration){
-        break;
-      }
+      
 
     }
-    //API call to add a chosen song to the application playlist
-    /**/
   }
 
   let loadArtists = function(artistLoc, state, artistNameContainer){
       for(var i = 0; i < artistLoc.length; i++){
-        if(artistLoc[i].state == state){
-          artistNameContainer.push(artistLoc[i].artist);
+        if(artistLoc[i] != null){
+          if(artistLoc[i].state == state){
+          artistNameContainer.push(artistLoc[i]);
+          }
         }
+        
       }
   }
 
@@ -323,4 +310,40 @@ $( document ).ready(function() {
       }
       });
     }
+  }
+
+  let changeArtistIDs = function(accessToken,artistLoc){
+      
+    for(var i = 36000; i < artistLoc.length; i++){
+      var artistNameURI = encodeURI(artistLoc[i].artist);
+      $.ajax({
+      url: `https://api.spotify.com/v1/search?q=${artistNameURI}&type=artist`,
+      type: 'GET',
+      async: false,
+      headers: {
+          'Authorization' : 'Bearer ' + accessToken
+      },
+      success: function(data){
+
+        if(data.artists.items.length == 0){
+          artistLoc[i].id = "";
+        }
+        else{
+          artistLoc[i].id = data.artists.items[0].id;
+        }
+        
+      },
+      error: function(){
+
+      }
+      });
+    }
+  }
+
+  let pruneJSON = function(artistLoc){
+      for(var i = 0; i < artistLoc.length; i++){
+        if(artistLoc[i] === null){
+          delete artistLoc[i];
+        }
+      }
   }
